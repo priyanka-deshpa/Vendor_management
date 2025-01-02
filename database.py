@@ -1,6 +1,10 @@
 import sqlite3
 from contextlib import contextmanager
+from typing import List
+from pydantic import ValidationError
 import pandas as pd
+from models import Vendor
+
 
 def init_db():
     with get_db_connection() as conn:
@@ -25,7 +29,14 @@ def get_db_connection():
     finally:
         conn.close()
 
-def add_vendor(vendor_data):
+def add_vendor(vendor_data: dict):
+    try:
+        # Validate data using the Pydantic model
+        vendor = Vendor(**vendor_data)
+    except ValidationError as e:
+        print("Validation error:", e)
+        return
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute('''
@@ -33,12 +44,12 @@ def add_vendor(vendor_data):
                                contact, status)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (
-            vendor_data['vendor_id'],
-            vendor_data['vendor_name'],
-            vendor_data['category'],
-            vendor_data['years_in_business'],
-            vendor_data['contact'],
-            vendor_data['status']
+            vendor.vendor_id,
+            vendor.vendor_name,
+            vendor.category,
+            vendor.years_in_business,
+            vendor.contact,
+            vendor.status
         ))
         conn.commit()
 
@@ -60,20 +71,27 @@ def update_vendor_status(vendor_id, new_status):
         conn.commit()
         return cursor.rowcount > 0
 
-def bulk_insert_vendors(df):
+def bulk_insert_vendors(df: pd.DataFrame):
+    # Validate all rows using Pydantic
+    try:
+        vendors = [Vendor(**row) for _, row in df.iterrows()]
+    except ValidationError as e:
+        print("Validation error during bulk insert:", e)
+        return
+
     with get_db_connection() as conn:
-        for _, row in df.iterrows():
+        for vendor in vendors:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO vendors (vendor_id, vendor_name, category, 
                                    years_in_business, contact, status)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (
-                row['vendor_id'],
-                row['vendor_name'],
-                row['category'],
-                row['years_in_business'],
-                row['contact'],
-                row['status']
+                vendor.vendor_id,
+                vendor.vendor_name,
+                vendor.category,
+                vendor.years_in_business,
+                vendor.contact,
+                vendor.status
             ))
         conn.commit()

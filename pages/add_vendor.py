@@ -20,7 +20,7 @@ def render_add_vendor_page():
         contact = st.text_input("Contact Information")
         status = st.selectbox(
             "Status",
-            ["Active", "Inactive", "Pending"]
+            ["active", "inactive"]
         )
         
         submit_button = st.form_submit_button("Add Vendor")

@@ -25,7 +25,7 @@ def render_update_status_page():
     
     new_status = st.selectbox(
         "New Status",
-        options=["Active", "Inactive"]
+        options=["active", "inactive"]
     )
     
     if st.button("Update Status"):
